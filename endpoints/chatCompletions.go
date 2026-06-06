@@ -2,31 +2,11 @@ package endpoints
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
+
+	"github.com/himanshu-thakur-7/llm-gateway/providers"
+	"github.com/himanshu-thakur-7/llm-gateway/types"
 )
-
-type ChatCompletionRequest struct {
-	Model   string `json:"model"`
-	Message string `json:"message"`
-}
-
-type ChatCompletionResponse struct {
-	ID      string `json:"id"`
-	Content string `json:"content"`
-}
-
-func (r ChatCompletionRequest) Validate() error {
-	if r.Model == "" {
-		return errors.New("model is required")
-	}
-
-	if r.Message == "" {
-		return errors.New("message is required")
-	}
-
-	return nil
-}
 
 func ChatCompletionHandler(w http.ResponseWriter, r *http.Request) {
 	// Only allow POST requests
@@ -40,7 +20,7 @@ func ChatCompletionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Decode request body
-	var req ChatCompletionRequest
+	var req types.ChatCompletionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(
@@ -62,10 +42,9 @@ func ChatCompletionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Mock response
-	resp := ChatCompletionResponse{
-		ID:      "mock-123",
-		Content: "Hello from gateway",
-	}
+	resp, _ := providers.MockProvider{}.ChatCompletion(
+		r.Context(), req,
+	)
 
 	w.Header().Set("Content-Type", "application/json")
 
