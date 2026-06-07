@@ -13,8 +13,10 @@ func main() {
 	http.HandleFunc("/healthz", endpoints.HealthzHandler)
 
 	mockProvider := providers.MockProvider{}
+	anthropicProvider := providers.AnthropicProvider{}
 	providerRegistry := map[string]providers.Provider{
-		"mock": mockProvider,
+		"mock":      mockProvider,
+		"anthropic": anthropicProvider,
 	}
 	gatewayRouter := router.NewStaticRouter(providerRegistry)
 
