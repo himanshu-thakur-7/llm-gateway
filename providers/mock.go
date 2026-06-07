@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/himanshu-thakur-7/llm-gateway/types"
 )
@@ -13,7 +14,10 @@ func (m MockProvider) ChatCompletion(
 	req types.ChatCompletionRequest,
 ) (types.ChatCompletionResponse, error) {
 	return types.ChatCompletionResponse{
-		ID:      "mock-123",
-		Content: "Hello from Mock Provider",
+		ID: "mock-123",
+		Content: fmt.Sprintf(
+			"response from provider %s",
+			"mock",
+		),
 	}, nil
 }
