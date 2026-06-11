@@ -1,10 +1,12 @@
 package providers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/himanshu-thakur-7/llm-gateway/types"
 )
@@ -38,8 +40,10 @@ type groqResponse struct {
 
 func NewGroqProvider(apiKey string, supportedModels map[string]bool) *GroqProvider {
 	return &GroqProvider{
-		apiKey:          apiKey,
-		client:          &http.Client{},
+		apiKey: apiKey,
+		client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 		supportedModels: supportedModels,
 	}
 }
@@ -82,7 +86,55 @@ func (g *GroqProvider) ChatCompletion(
 
 	fmt.Printf("%s\n", string(body))
 
-	return types.ChatCompletionResponse{}, nil
+	httpReq, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		"https://api.groq.com/openai/v1/chat/completions",
+		bytes.NewBuffer(body),
+	)
+
+	httpReq.Header.Set(
+		"Authorization",
+		"Bearer "+g.apiKey,
+	)
+
+	httpReq.Header.Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	fmt.Println(httpReq)
+
+	resp, err := g.client.Do(httpReq)
+
+	if err != nil {
+		fmt.Printf("Error occured %v \n", err)
+		return types.ChatCompletionResponse{}, err
+	}
+
+	defer resp.Body.Close()
+
+	fmt.Printf("response %s", resp.Status)
+
+	// bodyBytes, err := io.ReadAll(resp.Body)
+
+	// if err != nil {
+	// 	return types.ChatCompletionResponse{}, err
+	// }
+
+	// fmt.Println(string(bodyBytes))
+
+	var groqResp groqResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&groqResp); err != nil {
+		fmt.Printf("Error occured line 131%v \n", err)
+		return types.ChatCompletionResponse{}, err
+	}
+
+	return types.ChatCompletionResponse{
+		ID:      groqResp.ID,
+		Content: groqResp.Choices[0].Message.Content,
+	}, nil
 }
 
 func (g *GroqProvider) SupportsModel(
