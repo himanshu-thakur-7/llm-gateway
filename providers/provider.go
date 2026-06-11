@@ -7,5 +7,7 @@ import (
 )
 
 type Provider interface {
+	Name() string
+	SupportsModel(model string) bool
 	ChatCompletion(ctx context.Context, req types.ChatCompletionRequest) (types.ChatCompletionResponse, error)
 }

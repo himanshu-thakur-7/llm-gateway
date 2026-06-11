@@ -17,7 +17,15 @@ func (m MockProvider) ChatCompletion(
 		ID: "mock-123",
 		Content: fmt.Sprintf(
 			"response from provider %s",
-			"mock",
+			m.Name(),
 		),
 	}, nil
+}
+
+func (m MockProvider) Name() string {
+	return "mock"
+}
+
+func (m MockProvider) SupportsModel(model string) bool {
+	return model == "gpt-4"
 }

@@ -17,7 +17,15 @@ func (m AnthropicProvider) ChatCompletion(
 		ID: "Anthropic-123",
 		Content: fmt.Sprintf(
 			"response from provider %s",
-			"anthropic",
+			m.Name(),
 		),
 	}, nil
+}
+
+func (m AnthropicProvider) Name() string {
+	return "anthropic"
+}
+
+func (m AnthropicProvider) SupportsModel(model string) bool {
+	return model == "claude"
 }
