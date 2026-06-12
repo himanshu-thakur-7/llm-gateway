@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	gatewayerrors "github.com/himanshu-thakur-7/llm-gateway/gatewayerrors"
 	"github.com/himanshu-thakur-7/llm-gateway/types"
 )
 
@@ -92,6 +93,10 @@ func (g *GroqProvider) ChatCompletion(
 		"https://api.groq.com/openai/v1/chat/completions",
 		bytes.NewBuffer(body),
 	)
+	if err != nil {
+		fmt.Printf("Error occured %v \n", err)
+		return types.ChatCompletionResponse{}, err
+	}
 
 	httpReq.Header.Set(
 		"Authorization",
@@ -124,11 +129,40 @@ func (g *GroqProvider) ChatCompletion(
 
 	// fmt.Println(string(bodyBytes))
 
+	if resp.StatusCode != http.StatusOK {
+		var errType gatewayerrors.ErrorType
+		switch resp.StatusCode {
+		case http.StatusUnauthorized:
+			errType = gatewayerrors.ErrorTypeAuth
+		case http.StatusTooManyRequests:
+			errType = gatewayerrors.ErrorTypeRateLimit
+		default:
+			errType = gatewayerrors.ErrorTypeProvider
+		}
+		return types.ChatCompletionResponse{},
+			&gatewayerrors.ProviderError{
+				Type:     errType,
+				Provider: g.Name(),
+				Message: fmt.Sprintf(
+					"provider returned status %d", resp.StatusCode,
+				),
+			}
+	}
+
 	var groqResp groqResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&groqResp); err != nil {
 		fmt.Printf("Error occured line 131%v \n", err)
-		return types.ChatCompletionResponse{}, err
+		return types.ChatCompletionResponse{}, &gatewayerrors.ProviderError{
+			Type:     gatewayerrors.ErrorTypeTimeout,
+			Provider: g.Name(),
+			Message:  err.Error(),
+		}
+	}
+
+	if len(groqResp.Choices) == 0 {
+		return types.ChatCompletionResponse{},
+			fmt.Errorf("groq returned no choices")
 	}
 
 	return types.ChatCompletionResponse{
